@@ -5,18 +5,14 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+import java.util.Vector;
+import java.util.stream.Stream;
+import javax.media.MediaLocator;
 
 /**
  *
@@ -24,11 +20,7 @@ import java.util.logging.Logger;
  */
 public class PlaceScreens {
   
-    public static void startShooting(int rate, int time, String url) {
-        Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
-        Date now = new Date();
-        String folderPath = "screens/" + formatter.format(now);
-        
+    public static void startShooting(int rate, int time, String url, String folderPath) {
         // first we create the folder
         new File(folderPath).mkdir();
         
@@ -44,9 +36,45 @@ public class PlaceScreens {
                 System.out.println("Ohhhh .... something failed : " + ex.getMessage());
             }
         }
+        
+        System.out.println("The shooting is over :)");
+    }
+    
+    @Deprecated
+    public static void makeVideos(String imgsPath, String fileName, int frameRates) {
+        // Getting images
+        Vector<String> imgLst = new Vector<>();
+        try(Stream<Path> paths = Files.walk(Paths.get(imgsPath))) {
+            paths.forEach(filePath -> {
+                if (Files.isRegularFile(filePath)) {
+                    imgLst.add(filePath.toString());
+                }
+            });
+        } catch (IOException ex) { 
+            System.out.println("Failed while loading images : " + ex.getMessage());
+        }
+
+        JpegImagesToMovie imageToMovie = new JpegImagesToMovie();
+        MediaLocator oml;
+        if ((oml = JpegImagesToMovie.createMediaLocator(fileName)) == null) {
+            System.err.println("Cannot build media locator from: " + fileName);
+            System.exit(0);
+        }
+        try {
+            imageToMovie.doIt(1000, 1000, frameRates, imgLst, oml);
+        } catch (MalformedURLException ex) {
+            System.out.println("Video making failed : " + ex.getMessage());
+        }
+        
+        System.out.println("Video created !");
     }
     
     public static void main(String[] args) {
-        PlaceScreens.startShooting(60000, 3600, "https://abra.me/place-snaps/recent.png");
+        /*Format formatter = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+        Date now = new Date();
+        String folderPath = "screens/" + formatter.format(now);
+        PlaceScreens.startShooting(60000, 3600, "https://abra.me/place-snaps/recent.png", folderPath);
+        PlaceScreens.makeVideos(folderPath, "video.mp4", 5);*/
+        PlaceScreens.makeVideos("./screens/2017-04-01-17-13-28", "./screens/2017-04-01-17-13-28/video.mp4", 5);
     }
 }
